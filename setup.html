@@ -1,0 +1,141 @@
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+		<title>ArcGIS API for JavaScript Hello World App</title>
+		<style>
+		  	html, body, #viewDiv {
+		      	padding: 0;
+		      	margin: 0;
+		      	height: 100%;
+		      	width: 100%;
+		    }
+		</style>
+
+	  	<link rel="stylesheet" href="https://js.arcgis.com/4.18/esri/css/main.css">
+	  	
+	</head>
+	<body>
+	  	<div id="viewDiv"></div>
+	</body>
+	<script src="https://js.arcgis.com/4.18/"></script>
+
+  	<script>
+    	require([
+      		"esri/Map",
+      		"esri/views/MapView",
+      		"esri/widgets/Search",
+      		"esri/layers/GraphicsLayer",
+      		"esri/widgets/Sketch"
+    	],function(Map, MapView, Search, GraphicsLayer, Sketch,Layer) {
+
+	      	var map = new Map({
+	        	basemap: "topo-vector"
+	   		});
+
+	      	var view = new MapView({
+		        container: "viewDiv",
+		        map: map,
+		        center: [9.927,0.415],
+		        zoom: 11
+	      	});
+	      	//Zone de gestion Fonction de recherche de lieux
+	      	var search = new Search({
+			  	view: view
+			});
+			//view.ui.add(search, "top-right");
+			//Fin de la zone de gestion de la Fonction de recherche de lieux
+			//Zone de gestion de la barre d'outils graphics
+			var graphicsLayer = new GraphicsLayer();
+			var map = new Map({
+				basemap: "topo-vector",
+				//*** ADD ***//
+				layers: [graphicsLayer]
+			});
+			//-----------------------
+			var sketch = new Sketch({
+			  	view: view,
+			  	layer: graphicsLayer
+			});
+			view.ui.add(sketch, "top-right");
+
+	      		//Outils personnalisés
+	      	//*** Red stroke, 1px wide ***//
+			var stroke = {
+			  color: [255, 0, 255],
+			  width: 2
+			};
+
+			//*** White fill color with 50% transparency ***//
+			var fillColor = [128, 255, 255,0.5];
+
+			//*** Override all of the default symbol colors and sizes ***//
+			var pointSymbol = sketch.viewModel.pointSymbol;
+			pointSymbol.color = fillColor;
+			pointSymbol.outline = stroke;
+			pointSymbol.size = 8;
+
+			var polylineSymbol = sketch.viewModel.polylineSymbol;
+			polylineSymbol.color = stroke.color;
+			polylineSymbol.width = stroke.width;
+
+			var polygonSymbol = sketch.viewModel.polygonSymbol;
+			polygonSymbol.color = fillColor;
+			polygonSymbol.outline = stroke;
+	      		//Fin de la zone Outils personnalisés
+	      	//*** ADD ***//
+			sketch.on("create", function (event) {
+			  	if (event.state === "complete") {
+			    	var attributes = {
+			      		name: "My Graphic",
+			      		type: event.graphic.geometry.type
+			    	};
+			    	event.graphic.attributes = attributes;
+
+			    	var popupTemplate = {
+			      		title: "{name}",
+			      		content: "I am a {type}."
+			    	};
+			    event.graphic.popupTemplate = popupTemplate;
+			  }
+			});
+
+	      	//Fin de la Zone de gestion de la barre d'outils graphics
+
+
+	      	//zone de gestion d'affichage des coordonnées
+	      	var coordsWidget = document.createElement("div");
+			coordsWidget.id = "coordsWidget";
+			coordsWidget.className = "esri-widget esri-component";
+			coordsWidget.style.padding = "7px 15px 5px";
+
+			view.ui.add(coordsWidget, "bottom-left");
+
+			//*** ADD ***//
+			function showCoordinates(pt) {
+			  	var coords =
+			    	"Lat/Lon " +
+			    	pt.latitude.toFixed(3) +
+			    	" " +
+			    	pt.longitude.toFixed(3) +
+			    	" | Scale 1:" +
+			    	Math.round(view.scale * 1) / 1 +
+			    	" | Zoom " +
+			    	view.zoom;
+			  coordsWidget.innerHTML = coords;
+			}
+			view.watch("stationary", function (isStationary) {
+				showCoordinates(view.center);
+			});
+
+			view.on("pointer-move", function (evt) {
+			  	showCoordinates(view.toMap({ x: evt.x, y: evt.y }));
+			});
+	      	//Fin de la zone
+	      	// Creates a layer from a Portal layer item id
+			
+    	});
+   
+
+  	</script>
+</html>
